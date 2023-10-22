@@ -31,27 +31,29 @@ var vertexColors = [
 ];
 
 
-// Parameters controlling the size of the Robot's arm
+
+
+var C_HEIGHT = 2.0;
+var C_WIDTH = 0.5;
 
 var BASE_HEIGHT      = 2.0;
-var BASE_WIDTH       = 5.0;
-var LOWER_ARM_HEIGHT = 5.0;
+var BASE_WIDTH       = 2.0;
+var LOWER_ARM_HEIGHT = 2.0;
 var LOWER_ARM_WIDTH  = 0.5;
-var UPPER_ARM_HEIGHT = 5.0;
+var UPPER_ARM_HEIGHT = 2.0;
 var UPPER_ARM_WIDTH  = 0.5;
 
 // Shader transformation matrices
-
 var modelViewMatrix, projectionMatrix;
 
 // Array of rotation angles (in degrees) for each rotation axis
-
 var Base = 0;
 var LowerArm = 1;
 var UpperArm = 2;
+var segment_C = 3;
 
 
-var theta= [ 0, 0, 0];
+var theta= [ 0, 0, 0, 0];
 
 var angle = 0;
 
@@ -63,32 +65,67 @@ init();
 
 //----------------------------------------------------------------------------
 
-function quad(  a,  b,  c,  d, iter) {
-    console.log("iter: " + iter)
+function quad(  a,  b,  c,  d) {
+    console.log("--------------------------------------------------------------------------------------------------------------------")
     console.log(a + ', ' + b + ', ' + c + ', ' + d);
-    console.log(vertexColors)
+
+
+    console.log("Adding:")
+    console.log("vertexColors[" + a + "]: " + vertexColors[a])
+    //console.log("vertices[a]: " + vertices[a])
+
+    console.log("vertices[" + a + "]: " + vertices[a])
+
+
+    // console.log("vertexColors[a]: " + vertexColors[a])
+    console.log("vertices[" + b + "]: " + vertices[b])
+
+    // console.log("vertexColors[a]: " + vertexColors[a])
+    console.log("vertices[" + c + "]: " + vertices[c])
+
+
+    // console.log("vertexColors[a]: " + vertexColors[a])
+    console.log("vertices[" + a + "]: " + vertices[a])
+
+    // console.log("vertexColors[a]: " + vertexColors[a])
+    console.log("vertices[" + c + "]: " + vertices[c])
+
+    // console.log("vertexColors[a]: " + vertexColors[a])
+    console.log("vertices[" + d + "]: " + vertices[d])
+
+
     colors.push(vertexColors[a]);
     points.push(vertices[a]);
+
     colors.push(vertexColors[a]);
     points.push(vertices[b]);
+
     colors.push(vertexColors[a]);
     points.push(vertices[c]);
+
     colors.push(vertexColors[a]);
     points.push(vertices[a]);
+
     colors.push(vertexColors[a]);
     points.push(vertices[c]);
+
     colors.push(vertexColors[a]);
     points.push(vertices[d]);
+
+    // console.log("points:")
+    // console.log(points)
+    // console.log("colors:")
+    // console.log(colors)
 }
 
 
 function colorCube() {
-    quad( 1, 0, 3, 2, 0 );
-    quad( 2, 3, 7, 6, 1 );
-    quad( 3, 0, 4, 7, 2 );
-    quad( 6, 5, 1, 2, 3 );
-    quad( 4, 5, 6, 7 , 4);
-    quad( 5, 4, 0, 1, 5 );
+    quad( 1, 0, 3, 2 );
+    quad( 2, 3, 7, 6 );
+    quad( 3, 0, 4, 7 );
+    quad( 6, 5, 1, 2 );
+    quad( 4, 5, 6, 7 );
+    quad( 5, 4, 0, 1 );
 }
 
 
@@ -139,15 +176,18 @@ function init() {
     gl.vertexAttribPointer( colorLoc, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( colorLoc );
 
-    document.getElementById("slider1").onchange = function(event) {
+    document.getElementById("slider0").onchange = function(event) {
         theta[0] = event.target.value;
     };
-    document.getElementById("slider2").onchange = function(event) {
+    document.getElementById("slider1").onchange = function(event) {
          theta[1] = event.target.value;
     };
-    document.getElementById("slider3").onchange = function(event) {
+    document.getElementById("slider2").onchange = function(event) {
          theta[2] =  event.target.value;
     };
+    document.getElementById("slider3").onchange = function(event) {
+        theta[3] =  event.target.value;
+   };
 
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
 
@@ -162,51 +202,18 @@ function init() {
 
 function base() {
     var s = scale(BASE_WIDTH, BASE_HEIGHT, BASE_WIDTH);
-    //console.log("s", s);
-    var instanceMatrix = mult( translate( 0.0, 0.5 * BASE_HEIGHT, 0.0 ), s);
-    //var instanceMatrix = mult(s,  translate( 0.0, 0.5 * BASE_HEIGHT, 0.0 ));
-
-    //console.log("instanceMatrix", instanceMatrix);
-
+    var instanceMatrix = mult(translate( 0.0, 0.5 * BASE_HEIGHT, 0.0 ), s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t)  );
     gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
 
-    //console.log("base", t);
 }
 
 //----------------------------------------------------------------------------
 
-
-function upperArm() {
-    var s = scale(UPPER_ARM_WIDTH, UPPER_ARM_HEIGHT, UPPER_ARM_WIDTH);
-    //console.log("s", s);
-
-    var instanceMatrix = mult(translate( 0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0 ),s);
-    //var instanceMatrix = mult(s, translate(  0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0 ));
-
-    //console.log("instanceMatrix", instanceMatrix);
-
-    var t = mult(modelViewMatrix, instanceMatrix);
-
-    //console.log("upper arm mv", modelViewMatrix);
-
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
-
-    //console.log("upper arm t", t);
-
-}
-
-//----------------------------------------------------------------------------
-
-
-function lowerArm()
-{
+function lowerArm() {
     var s = scale(LOWER_ARM_WIDTH, LOWER_ARM_HEIGHT, LOWER_ARM_WIDTH);
     var instanceMatrix = mult( translate( 0.0, 0.5 * LOWER_ARM_HEIGHT, 0.0 ), s);
-
-
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)   );
     gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
@@ -215,26 +222,67 @@ function lowerArm()
 
 //----------------------------------------------------------------------------
 
+function upperArm() {
+    var s = scale(UPPER_ARM_WIDTH, UPPER_ARM_HEIGHT, UPPER_ARM_WIDTH);
+    var instanceMatrix = mult(translate( 0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0 ), s);
+    var t = mult(modelViewMatrix, instanceMatrix);
+    gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t)  );
+    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+
+}
+
+//----------------------------------------------------------------------------
+
+function draw_segment_C() {
+    var s = scale(C_WIDTH, C_HEIGHT, C_WIDTH);
+    var instanceMatrix = mult(translate( 0.0, 0.5 * C_HEIGHT, 0.0 ), s);
+    var t = mult(modelViewMatrix, instanceMatrix);
+    gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t)  );
+    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+
+}
+
 
 function render() {
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
-    // Rotate 
-    console.log("theta[base]:" + theta[Base])
+    // console.log("theta[base]:" + theta[Base])
+
     modelViewMatrix = rotate(theta[Base], vec3(0, 1, 0 ));
     base();
 
-    modelViewMatrix = mult(modelViewMatrix, translate(0.0, BASE_HEIGHT, 0.0));
+    modelViewMatrix = mult(modelViewMatrix, translate(0.5 * BASE_WIDTH, 0.0, 0.0));
     modelViewMatrix = mult(modelViewMatrix, rotate(theta[LowerArm], vec3(0, 0, 1 )));
+    //console.log("theta[LowerArm]:" + theta[LowerArm])
     lowerArm();
+
+    // Reset mvm here to something? Because when I rotate the 
+
+
+
+    modelViewMatrix  = mult(modelViewMatrix, translate(-0.5 * BASE_WIDTH, 0.0, 0.0));
+    modelViewMatrix  = mult(modelViewMatrix, rotate(theta[UpperArm], vec3(0, 0, 1)) );
+    upperArm();
+
     // printm( translate(0.0, BASE_HEIGHT, 0.0));
     // printm(modelViewMatrix);
 
-    modelViewMatrix  = mult(modelViewMatrix, translate(0.0, LOWER_ARM_HEIGHT, 0.0));
-    modelViewMatrix  = mult(modelViewMatrix, rotate(theta[UpperArm], vec3(0, 0, 1)) );
+    // TODO:
+    // Is modifying this code to create a more complex figure, like an octopus/spider with lots of legs and joints,
+    // "substantially the same" as the provided examples? Am I good to move forward with this idea?
+    // Or back to the drawing board?
 
-    upperArm();
+    // TODO:
+    // For making an octopus/spider, we need each arm to be attached to different points
+    // how do we do that?
+    // If we add more parts they just keep getting concatenated to the previous segment.
+    // Is this because the mv matrix has not been reset?
+    // Is this possible using the instanced drawing idea or not?
+
+    // modelViewMatrix  = mult(modelViewMatrix, translate(0.0, C_HEIGHT, 0.0));
+    // modelViewMatrix  = mult(modelViewMatrix, rotate(theta[segment_C], vec3(0, 0, 1)) );
+    // draw_segment_C();
 
 //printm(modelViewMatrix);
 
