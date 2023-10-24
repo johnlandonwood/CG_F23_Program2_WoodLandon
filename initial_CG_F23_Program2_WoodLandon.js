@@ -46,7 +46,6 @@ var UPPER_ARM_WIDTH  = 0.5;
 // Shader transformation matrices
 var modelViewMatrix, modelViewMatrixLoc;
 var projectionMatrix, projectionMatrixLoc;
-var nMatrix, nMatrixLoc;
 
 // Array of rotation angles (in degrees) for each rotation axis
 var Base = 0;
@@ -210,7 +209,6 @@ function init() {
 
    modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix");
    projectionMatrixLoc = gl.getUniformLocation(program, "uProjectionMatrix");
-   nMatrixLoc = gl.getUniformLocation(program, "uNormalMatrix");
 
     projectionMatrix = ortho(-10, 10, -10, 10, -10, 10);
     
@@ -269,11 +267,9 @@ function render() {
 
     modelViewMatrix = lookAt(eye, at , up);
     projectionMatrix = ortho(-10, 10, -10, 10, -10, 10);
-    nMatrix = normalMatrix(modelViewMatrix, true);
 
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
-    gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix) );
-    gl.uniformMatrix3fv(nMatrixLoc, false, flatten(nMatrix)  ); // TODO: Necessary for camera movement?
+    gl.uniformMatrix4fv(projectionMatrixLoc, false, flatten(projectionMatrix));
 
     // TODO:
     // Is modifying this code to create a more complex figure, like an octopus/spider with lots of legs and joints,
@@ -288,9 +284,10 @@ function render() {
     // Is this possible using the instanced drawing idea or not?
 
     // TODO: Why is my camera rotation not working? It works without the instanced drawing but not with it.
+    // Only one drawing works, adding in any other modifications to the mvm messes it up.
 
 
-    // gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    //gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
 
     modelViewMatrix = rotate(theta[Base], vec3(0, 1, 0 ));
     base();
@@ -300,7 +297,7 @@ function render() {
     //console.log("theta[LowerArm]:" + theta[LowerArm])
     lowerArm();
 
-    // TODO: Is here where I would reset MVM?
+    // // TODO: Is here where I would reset MVM?
 
     modelViewMatrix  = mult(modelViewMatrix, translate(-0.5 * BASE_WIDTH, 0.0, 0.0));
     modelViewMatrix  = mult(modelViewMatrix, rotate(theta[UpperArm], vec3(0, 0, 1)) );
