@@ -72,19 +72,6 @@ var pointsArray = [];
 
 init();
 
-//-------------------------------------------
-
-function scale4(a, b, c) {
-   var result = mat4();
-   result[0] = a;
-   result[5] = b;
-   result[10] = c;
-   return result;
-}
-
-//--------------------------------------------
-
-
 function createNode(transform, render, sibling, child){
     var node = {
     transform: transform,
@@ -378,6 +365,8 @@ function init() {
     };
 
     for(i=0; i<numNodes; i++) initNodes(i);
+
+    // initNodes(0);
 
     render();
 }
