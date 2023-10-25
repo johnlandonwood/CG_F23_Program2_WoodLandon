@@ -1,380 +1,261 @@
 "use strict";
 
-var canvas;
-var gl;
-var program;
+var canvas, gl, program;
 
-var projectionMatrix;
-var modelViewMatrix;
+var NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 
-var instanceMatrix;
-
-var modelViewMatrixLoc;
+var points = [];
+var colors = [];
 
 var vertices = [
-
     vec4( -0.5, -0.5,  0.5, 1.0 ),
     vec4( -0.5,  0.5,  0.5, 1.0 ),
-    vec4( 0.5,  0.5,  0.5, 1.0 ),
-    vec4( 0.5, -0.5,  0.5, 1.0 ),
+    vec4(  0.5,  0.5,  0.5, 1.0 ),
+    vec4(  0.5, -0.5,  0.5, 1.0 ),
     vec4( -0.5, -0.5, -0.5, 1.0 ),
     vec4( -0.5,  0.5, -0.5, 1.0 ),
-    vec4( 0.5,  0.5, -0.5, 1.0 ),
-    vec4( 0.5, -0.5, -0.5, 1.0 )
+    vec4(  0.5,  0.5, -0.5, 1.0 ),
+    vec4(  0.5, -0.5, -0.5, 1.0 )
+];
+
+// RGBA colors
+var vertexColors = [
+    vec4( 0.0, 0.0, 0.0, 1.0 ),  // black
+    vec4( 1.0, 0.0, 0.0, 1.0 ),  // red
+    vec4( 1.0, 1.0, 0.0, 1.0 ),  // yellow
+    vec4( 0.0, 1.0, 0.0, 1.0 ),  // green
+    vec4( 0.0, 0.0, 1.0, 1.0 ),  // blue
+    vec4( 1.0, 0.0, 1.0, 1.0 ),  // magenta
+    vec4( 1.0, 1.0, 1.0, 1.0 ),  // white
+    vec4( 0.0, 1.0, 1.0, 1.0 )   // cyan
 ];
 
 
-var torsoId = 0;
-var headId  = 1;
-var head1Id = 1;
-var head2Id = 10;
-var leftUpperArmId = 2;
-var leftLowerArmId = 3;
-var rightUpperArmId = 4;
-var rightLowerArmId = 5;
-var leftUpperLegId = 6;
-var leftLowerLegId = 7;
-var rightUpperLegId = 8;
-var rightLowerLegId = 9;
 
+// IDs for each segment
+var baseID = 0;
+var lowerArmID = 1;
+var upperArmID = 2;
 
-var torsoHeight = 5.0;
-var torsoWidth = 1.0;
-var upperArmHeight = 3.0;
-var lowerArmHeight = 2.0;
-var upperArmWidth  = 0.5;
-var lowerArmWidth  = 0.5;
-var upperLegWidth  = 0.5;
-var lowerLegWidth  = 0.5;
-var lowerLegHeight = 2.0;
-var upperLegHeight = 3.0;
-var headHeight = 1.5;
-var headWidth = 1.0;
+// Parameters controlling the size of the Robot's arm
+var BASE_HEIGHT      = 3.0;
+var BASE_WIDTH       = 3.0;
+var LOWER_ARM_HEIGHT = 5.0;
+var LOWER_ARM_WIDTH  = 0.5;
+var UPPER_ARM_HEIGHT = 5.0;
+var UPPER_ARM_WIDTH  = 0.5;
 
-var numNodes = 10;
-var numAngles = 11;
+// Shader transformation matrices
+
+var modelViewMatrix;
+var modelViewMatrixLoc;
+var instanceMatrix;
+var projectionMatrix;
+
+// Array of rotation angles (in degrees) for each rotation axis
+
+var numNodes = 3;
+var numAngles = 3;
 var angle = 0;
+var theta= [0, 0, 0];
 
-var theta = [0, 0, 0, 0, 0, 0, 180, 0, 180, 0, 0];
-
-var numVertices = 24;
 
 var stack = [];
-
 var figure = [];
 
-for( var i=0; i<numNodes; i++) figure[i] = createNode(null, null, null, null);
 
-var vBuffer;
-var modelViewLoc;
+var vBuffer, cBuffer;
 
-var pointsArray = [];
-
-init();
 
 function createNode(transform, render, sibling, child){
     var node = {
-    transform: transform,
-    render: render,
-    sibling: sibling,
-    child: child,
+        transform: transform,
+        render: render,
+        sibling: sibling,
+        child: child,
     }
     return node;
 }
 
-
-function initNodes(Id) {
-
-    var m = mat4();
-
-    switch(Id) {
-
-    case torsoId:
-
-    m = rotate(theta[torsoId], vec3(0, 1, 0) );
-    figure[torsoId] = createNode( m, torso, null, headId );
-    break;
-
-    case headId:
-    case head1Id:
-    case head2Id:
+function quad(a,  b,  c,  d) {
+    colors.push(vertexColors[a]);
+    points.push(vertices[a]);
+    colors.push(vertexColors[a]);
+    points.push(vertices[b]);
+    colors.push(vertexColors[a]);
+    points.push(vertices[c]);
+    colors.push(vertexColors[a]);
+    points.push(vertices[a]);
+    colors.push(vertexColors[a]);
+    points.push(vertices[c]);
+    colors.push(vertexColors[a]);
+    points.push(vertices[d]);
+}
 
 
-    m = translate(0.0, torsoHeight+0.5*headHeight, 0.0);
-	  m = mult(m, rotate(theta[head1Id], vec3(1, 0, 0)))
-	  m = mult(m, rotate(theta[head2Id], vec3(0, 1, 0)));
-    m = mult(m, translate(0.0, -0.5*headHeight, 0.0));
-    figure[headId] = createNode( m, head, leftUpperArmId, null);
-    break;
+function colorCube() {
+    quad( 1, 0, 3, 2);
+    quad( 2, 3, 7, 6);
+    quad( 3, 0, 4, 7);
+    quad( 6, 5, 1, 2);
+    quad( 4, 5, 6, 7);
+    quad( 5, 4, 0, 1);
+}
+
+function initialize_nodes(ID) {
+    var m = mat4(); // m is a model view matrix 
 
 
-    case leftUpperArmId:
-
-    m = translate(-(torsoWidth+upperArmWidth), 0.9*torsoHeight, 0.0);
-	  m = mult(m, rotate(theta[leftUpperArmId], vec3(1, 0, 0)));
-    figure[leftUpperArmId] = createNode( m, leftUpperArm, rightUpperArmId, leftLowerArmId );
-    break;
-
-    case rightUpperArmId:
-
-    m = translate(torsoWidth+upperArmWidth, 0.9*torsoHeight, 0.0);
-	  m = mult(m, rotate(theta[rightUpperArmId], vec3(1, 0, 0)));
-    figure[rightUpperArmId] = createNode( m, rightUpperArm, leftUpperLegId, rightLowerArmId );
-    break;
-
-    case leftUpperLegId:
-
-    m = translate(-(torsoWidth+upperLegWidth), 0.1*upperLegHeight, 0.0);
-	  m = mult(m , rotate(theta[leftUpperLegId], vec3(1, 0, 0)));
-    figure[leftUpperLegId] = createNode( m, leftUpperLeg, rightUpperLegId, leftLowerLegId );
-    break;
-
-    case rightUpperLegId:
-
-    m = translate(torsoWidth+upperLegWidth, 0.1*upperLegHeight, 0.0);
-	  m = mult(m, rotate(theta[rightUpperLegId], vec3(1, 0, 0)));
-    figure[rightUpperLegId] = createNode( m, rightUpperLeg, null, rightLowerLegId );
-    break;
-
-    case leftLowerArmId:
-
-    m = translate(0.0, upperArmHeight, 0.0);
-    m = mult(m, rotate(theta[leftLowerArmId], vec3(1, 0, 0)));
-    figure[leftLowerArmId] = createNode( m, leftLowerArm, null, null );
-    break;
-
-    case rightLowerArmId:
-
-    m = translate(0.0, upperArmHeight, 0.0);
-    m = mult(m, rotate(theta[rightLowerArmId], vec3(1, 0, 0)));
-    figure[rightLowerArmId] = createNode( m, rightLowerArm, null, null );
-    break;
-
-    case leftLowerLegId:
-
-    m = translate(0.0, upperLegHeight, 0.0);
-    m = mult(m, rotate(theta[leftLowerLegId],vec3(1, 0, 0)));
-    figure[leftLowerLegId] = createNode( m, leftLowerLeg, null, null );
-    break;
-
-    case rightLowerLegId:
-
-    m = translate(0.0, upperLegHeight, 0.0);
-    m = mult(m, rotate(theta[rightLowerLegId], vec3(1, 0, 0)));
-    figure[rightLowerLegId] = createNode( m, rightLowerLeg, null, null );
-    break;
-
+    switch(ID) {
+        case baseID:
+            m = rotate(theta[baseID], vec3(0, 1, 0 ));
+            figure[baseID] = createNode(m, base, null, lowerArmID)
+            //console.log(m)
+            // console.log("figure[0]: ")
+            // console.log(figure[0])
+            break;
+        case lowerArmID:
+            m = mult(m, translate(0.0, BASE_HEIGHT, 0.0));
+            m = mult(m, rotate(theta[lowerArmID], vec3(0, 0, 1 )));
+            figure[lowerArmID] = createNode(m, lowerArm, upperArmID, null)
+            // console.log("figure[1]: ")
+            // console.log(figure[1])
+            break;
+        case upperArmID:
+            m = mult(m, translate(0.0, LOWER_ARM_HEIGHT, 0.0));
+            m = mult(m, rotate(theta[upperArmID], vec3(0, 0, 1)) );
+            figure[upperArmID] = createNode(m, upperArm, null, null)
+            // console.log("figure[2]: ")
+            // console.log(figure[2])
+            break;
     }
 
+
 }
 
-function traverse(Id) {
+function traverse(ID) {
 
-   if(Id == null) return;
-   stack.push(modelViewMatrix);
-   modelViewMatrix = mult(modelViewMatrix, figure[Id].transform);
-   figure[Id].render();
-   if(figure[Id].child != null) traverse(figure[Id].child);
+    if (ID == null) {
+        return;
+    }
+
+    stack.push(modelViewMatrix);
+    modelViewMatrix = mult(modelViewMatrix, figure[ID].transform);
+    figure[ID].render();
+
+    if(figure[ID].child != null) {
+        traverse(figure[ID].child);
+    }
+
     modelViewMatrix = stack.pop();
-   if(figure[Id].sibling != null) traverse(figure[Id].sibling);
+
+    if(figure[ID].sibling != null) {
+        traverse(figure[ID].sibling);
+    }
+
+ }
+
+ function base() {
+    var s = scale(BASE_WIDTH, BASE_HEIGHT, BASE_WIDTH);
+    instanceMatrix = mult( translate( 0.0, 0.5 * BASE_HEIGHT, 0.0 ), s);
+    var t = mult(modelViewMatrix, instanceMatrix);
+    gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t)  );
+    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
 }
 
-function torso() {
+function lowerArm() {
+    var s = scale(LOWER_ARM_WIDTH, LOWER_ARM_HEIGHT, LOWER_ARM_WIDTH);
+    instanceMatrix = mult( translate( 0.0, 0.5 * LOWER_ARM_HEIGHT, 0.0 ), s);
+    var t = mult(modelViewMatrix, instanceMatrix);
+    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)   );
+    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
 
-    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5*torsoHeight, 0.0) );
-    instanceMatrix = mult(instanceMatrix, scale( torsoWidth, torsoHeight, torsoWidth));
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
 }
 
-function head() {
-
-    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * headHeight, 0.0 ));
-	instanceMatrix = mult(instanceMatrix, scale(headWidth, headHeight, headWidth) );
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
-}
-
-function leftUpperArm() {
-
-    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * upperArmHeight, 0.0) );
-	instanceMatrix = mult(instanceMatrix, scale(upperArmWidth, upperArmHeight, upperArmWidth) );
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
-}
-
-function leftLowerArm() {
-
-    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * lowerArmHeight, 0.0) );
-	instanceMatrix = mult(instanceMatrix, scale(lowerArmWidth, lowerArmHeight, lowerArmWidth) );
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
-}
-
-function rightUpperArm() {
-
-    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * upperArmHeight, 0.0) );
-	instanceMatrix = mult(instanceMatrix, scale(upperArmWidth, upperArmHeight, upperArmWidth) );
-  gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
-}
-
-function rightLowerArm() {
-
-    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * lowerArmHeight, 0.0) );
-	instanceMatrix = mult(instanceMatrix, scale(lowerArmWidth, lowerArmHeight, lowerArmWidth) );
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
-}
-
-function  leftUpperLeg() {
-
-    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * upperLegHeight, 0.0) );
-	instanceMatrix = mult(instanceMatrix, scale(upperLegWidth, upperLegHeight, upperLegWidth) );
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
-}
-
-function leftLowerLeg() {
-
-    instanceMatrix = mult(modelViewMatrix, translate( 0.0, 0.5 * lowerLegHeight, 0.0) );
-	instanceMatrix = mult(instanceMatrix, scale(lowerLegWidth, lowerLegHeight, lowerLegWidth) );
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
-}
-
-function rightUpperLeg() {
-
-    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * upperLegHeight, 0.0) );
-	instanceMatrix = mult(instanceMatrix, scale(upperLegWidth, upperLegHeight, upperLegWidth) );
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
-}
-
-function rightLowerLeg() {
-
-    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * lowerLegHeight, 0.0) );
-	instanceMatrix = mult(instanceMatrix, scale(lowerLegWidth, lowerLegHeight, lowerLegWidth) )
-    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix) );
-    for(var i =0; i<6; i++) gl.drawArrays(gl.TRIANGLE_FAN, 4*i, 4);
-}
-
-function quad(a, b, c, d) {
-     pointsArray.push(vertices[a]);
-     pointsArray.push(vertices[b]);
-     pointsArray.push(vertices[c]);
-     pointsArray.push(vertices[d]);
+function upperArm() {
+    var s = scale(UPPER_ARM_WIDTH, UPPER_ARM_HEIGHT, UPPER_ARM_WIDTH);
+    instanceMatrix = mult(translate( 0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0 ),s);
+    var t = mult(modelViewMatrix, instanceMatrix);
+    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
+    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
 }
 
 
-function cube()
-{
-    quad( 1, 0, 3, 2 );
-    quad( 2, 3, 7, 6 );
-    quad( 3, 0, 4, 7 );
-    quad( 6, 5, 1, 2 );
-    quad( 4, 5, 6, 7 );
-    quad( 5, 4, 0, 1 );
-}
 
 
 function init() {
 
+    // Initialize program
     canvas = document.getElementById( "gl-canvas" );
-
     gl = canvas.getContext('webgl2');
     if (!gl) { alert( "WebGL 2.0 isn't available" ); }
-
     gl.viewport( 0, 0, canvas.width, canvas.height );
-    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
+    gl.clearColor( 0.9, 0.9, 0.9, 1.0 );
+    gl.enable( gl.DEPTH_TEST );
+    program = initShaders( gl, "vertex-shader", "fragment-shader" );
+    gl.useProgram( program );
 
-    //
-    //  Load shaders and initialize attribute buffers
-    //
-    program = initShaders( gl, "vertex-shader", "fragment-shader");
+    // Initializes points and colors
+    colorCube();
 
-    gl.useProgram( program);
-
-    instanceMatrix = mat4();
-
-    projectionMatrix = ortho(-10.0,10.0,-10.0, 10.0,-10.0,10.0);
-    modelViewMatrix = mat4();
-
-
-    gl.uniformMatrix4fv(gl.getUniformLocation( program, "modelViewMatrix"), false, flatten(modelViewMatrix)  );
-    gl.uniformMatrix4fv( gl.getUniformLocation( program, "projectionMatrix"), false, flatten(projectionMatrix)  );
-
-    modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix")
-
-    cube();
-
+    // Create and initialize buffer objects
     vBuffer = gl.createBuffer();
-
     gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(pointsArray), gl.STATIC_DRAW);
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
 
     var positionLoc = gl.getAttribLocation( program, "aPosition" );
     gl.vertexAttribPointer( positionLoc, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( positionLoc );
 
-        document.getElementById("slider0").onchange = function(event) {
-        theta[torsoId ] = event.target.value;
-        initNodes(torsoId);
-    };
-        document.getElementById("slider1").onchange = function(event) {
-        theta[head1Id] = event.target.value;
-        initNodes(head1Id);
-    };
+    cBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, cBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW );
 
+    var colorLoc = gl.getAttribLocation( program, "aColor" );
+    gl.vertexAttribPointer( colorLoc, 4, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( colorLoc );
+
+
+    // Event listeners
+    document.getElementById("slider1").onchange = function(event) {
+        theta[0] = event.target.value;
+        initialize_nodes(baseID);
+    };
     document.getElementById("slider2").onchange = function(event) {
-         theta[leftUpperArmId] = event.target.value;
-         initNodes(leftUpperArmId);
+         theta[1] = event.target.value;
+         initialize_nodes(lowerArmID);
     };
     document.getElementById("slider3").onchange = function(event) {
-         theta[leftLowerArmId] =  event.target.value;
-         initNodes(leftLowerArmId);
+         theta[2] =  event.target.value;
+         initialize_nodes(upperArmID);
     };
 
-        document.getElementById("slider4").onchange = function(event) {
-        theta[rightUpperArmId] = event.target.value;
-        initNodes(rightUpperArmId);
-    };
-    document.getElementById("slider5").onchange = function(event) {
-         theta[rightLowerArmId] =  event.target.value;
-         initNodes(rightLowerArmId);
-    };
-        document.getElementById("slider6").onchange = function(event) {
-        theta[leftUpperLegId] = event.target.value;
-        initNodes(leftUpperLegId);
-    };
-    document.getElementById("slider7").onchange = function(event) {
-         theta[leftLowerLegId] = event.target.value;
-         initNodes(leftLowerLegId);
-    };
-    document.getElementById("slider8").onchange = function(event) {
-         theta[rightUpperLegId] =  event.target.value;
-         initNodes(rightUpperLegId);
-    };
-        document.getElementById("slider9").onchange = function(event) {
-        theta[rightLowerLegId] = event.target.value;
-        initNodes(rightLowerLegId);
-    };
-    document.getElementById("slider10").onchange = function(event) {
-         theta[head2Id] = event.target.value;
-         initNodes(head2Id);
-    };
 
-    for(i=0; i<numNodes; i++) initNodes(i);
+    // Initialize matrices and bind uniforms
+    instanceMatrix = mat4();
+    projectionMatrix = ortho(-10, 10, -10, 10, -10, 10);
+    modelViewMatrix = mat4();
+    gl.uniformMatrix4fv(gl.getUniformLocation( program, "uModelViewMatrix"), false, flatten(modelViewMatrix)  );
+    gl.uniformMatrix4fv(gl.getUniformLocation( program, "uProjectionMatrix"), false, flatten(projectionMatrix)  );
+    modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix")
+    
 
-    // initNodes(0);
+    for(i = 0; i < numNodes; i++) {
+        initialize_nodes(i);
+    } 
+
 
     render();
 }
 
+for(var i = 0; i < numNodes; i++)  {
+    figure[i] = createNode(null, null, null, null);
+}
+
+init();
 
 function render() {
-
-        gl.clear( gl.COLOR_BUFFER_BIT );
-        traverse(torsoId);
-        requestAnimationFrame(render);
+    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+    traverse(baseID);
+    requestAnimationFrame(render);
 }
