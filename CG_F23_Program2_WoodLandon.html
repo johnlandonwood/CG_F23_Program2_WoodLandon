@@ -5,26 +5,40 @@
 <canvas id="gl-canvas" width="512"" height="512"> </canvas>
 
 <div>
-body angle -180 <input id="slider1" type="range"
- min="-180" max="180" step="10" value="0"
-  />
- 180
-</div><br/>
+    base angle -180 <input id="slider0" type="range" min="-180" max="180" step="5" value="0"/> 180
+</div>
 
 <div>
-lower arm angle -180 <input id="slider2" type="range"
- min="-180" max="180" step="10" value="0"
-  />
- 180
-</div><br/>
+    tentacle_1 angle -60 <input id="slider1" type="range" min="-60" max="0" step="5" value="0"/> 0
+</div>
 
 <div>
-upper arm angle -180 <input id="slider3" type="range"
- min="-180" max="180" step="10" value="0"
-  />
- 180
-</div><br/>
+    tentacle_2 angle 0 <input id="slider2" type="range" min="0" max="60" step="5" value="0"/> 60
+</div>
 
+<div>
+    tentacle_3 angle -60 <input id="slider3" type="range" min="-60" max="0" step="5" value="0"/> 0
+</div>
+
+<div>
+    tentacle_4 angle 0 <input id="slider4" type="range" min="0" max="60" step="5" value="0"/> 60
+</div>
+
+<div>
+    tentacle_5 angle -60 <input id="slider5" type="range" min="-60" max="0" step="5" value="0"/> 0
+</div>
+
+<div>
+    tentacle_6 angle 0 <input id="slider6" type="range" min="0" max="60" step="5" value="0"/> 60
+</div>
+
+<div>
+    tentacle_7 angle -60 <input id="slider7" type="range" min="-60" max="0" step="5" value="0"/> 0
+</div>
+
+<div>
+    tentacle_8 angle 0 <input id="slider8" type="range" min="0" max="60" step="5" value="0"/> 60
+</div>
 
 <script id="vertex-shader" type="x-shader/x-vertex">
 #version 300 es
