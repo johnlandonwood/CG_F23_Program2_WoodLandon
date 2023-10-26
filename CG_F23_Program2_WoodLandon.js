@@ -31,7 +31,6 @@ var vertexColors = [
 ];
 
 
-
 // IDs for each segment
 var baseID = 0;
 var tentacle_1_ID = 1;
@@ -42,6 +41,8 @@ var tentacle_5_ID = 5;
 var tentacle_6_ID = 6;
 var tentacle_7_ID = 7;
 var tentacle_8_ID = 8;
+var tentacle_1_lower_ID = 9;
+var tentacle_2_lower_ID = 10;
 
 // Parameters controlling the size of the Robot's arm
 var BASE_HEIGHT      = 2.0;
@@ -49,38 +50,29 @@ var BASE_WIDTH       = 2.0;
 var TENTACLE_HEIGHT = 4.0;
 var TENTACLE_WIDTH = 0.5;
 
-// var LOWER_ARM_HEIGHT = 5.0;
-// var LOWER_ARM_WIDTH  = 0.5;
-
-
-// var UPPER_ARM_HEIGHT = 5.0;
-// var UPPER_ARM_WIDTH  = 0.5;
-
-
-
+var LOWER_TENTACLE_HEIGHT = 1.5;
+var LOWER_TENTACLE_WIDTH = 0.5;
 
 // Shader transformation matrices
-
 var modelViewMatrix;
 var modelViewMatrixLoc;
 var instanceMatrix;
 var projectionMatrix;
 
+// Number of nodes in the tree (one node for each instance of unit cube to be rendered)
+var numNodes = 11;
+
 // Array of rotation angles (in degrees) for each rotation axis
+var theta= [0, -60, 60, -60, 60, -60, 60, -60, 60, 0, 0];
 
-var numNodes = 9;
-var numAngles = 9;
-var angle = 0;
-var theta= [0, -60, 60, -60, 60, -60, 60, -60, 60];
-
-
+// Stack array and figure array of nodes
 var stack = [];
 var figure = [];
 
 
 var vBuffer, cBuffer;
 
-
+// Function to create a node representing a segment
 function createNode(transform, render, sibling, child){
     var node = {
         transform: transform,
@@ -91,6 +83,7 @@ function createNode(transform, render, sibling, child){
     return node;
 }
 
+// Function to render and color a quad
 function quad(a,  b,  c,  d) {
     colors.push(vertexColors[a]);
     points.push(vertices[a]);
@@ -106,7 +99,7 @@ function quad(a,  b,  c,  d) {
     points.push(vertices[d]);
 }
 
-
+// Function to create the base cube used as model for other instances
 function colorCube() {
     quad( 1, 0, 3, 2);
     quad( 2, 3, 7, 6);
@@ -150,7 +143,7 @@ function initialize_nodes(ID) {
             break;
         case tentacle_1_ID:
             m = mult(m, rotate(theta[tentacle_1_ID], vec3(0, 0, 1 ))); // z
-            figure[tentacle_1_ID] = createNode(m, tentacle_1, tentacle_2_ID, null) // TODO: Each tentacle will have a "lower" child
+            figure[tentacle_1_ID] = createNode(m, tentacle_1, tentacle_2_ID, tentacle_1_lower_ID) // TODO: Each tentacle will have a "lower" child
             break;
         case tentacle_2_ID:
             m = mult(m, rotate(theta[tentacle_2_ID], vec3(0, 0, 1)) ); 
@@ -180,11 +173,21 @@ function initialize_nodes(ID) {
             m = mult(m, rotate(theta[tentacle_8_ID], vec3(-1, 0, 1)) ); 
             figure[tentacle_8_ID] = createNode(m, tentacle_8, null, null)
             break;
+
+        // Lower parts of tentacles 
+        case tentacle_1_lower_ID:
+            m = mult(m, rotate(theta[tentacle_1_lower_ID], vec3(0, 0, 1)) ); 
+            console.log("tentacle 1 lower:")
+            console.log(m)
+            figure[tentacle_1_lower_ID] = createNode(m, tentacle_1_lower, null, null)
+            break;
     }
+
+}
     
 
 
-}
+
 
 // Scales and translations done in these functions
 function base() {
@@ -254,6 +257,15 @@ function tentacle_7() {
 function tentacle_8() {
     var s = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH);
     instanceMatrix = mult(translate( 0.0, -3.0, 0.0 ),s);
+    var t = mult(modelViewMatrix, instanceMatrix);
+    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
+    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+}
+
+function tentacle_1_lower() {
+    //modelViewMatrix = figure[tentacle_1_ID].transform
+    var s = scale(LOWER_TENTACLE_WIDTH, LOWER_TENTACLE_HEIGHT, LOWER_TENTACLE_WIDTH);
+    instanceMatrix = mult(translate( 0.0, -5.5, 0.0 ),s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
     gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
@@ -341,6 +353,11 @@ function init() {
         initialize_nodes(tentacle_8_ID);
         console.log(theta)
     };
+    document.getElementById("slider9").onchange = function(event) {
+        theta[9] = event.target.value;
+        initialize_nodes(tentacle_1_lower_ID);
+        console.log(theta)
+    };
 
 
     // Initialize matrices and bind uniforms
@@ -371,3 +388,7 @@ function render() {
     traverse(baseID);
     requestAnimationFrame(render);
 }
+
+
+// TODO: Add octopus eyes; maybe as two additional cubes rendered to clip slightly outside the side of the base. Colored black?
+// TODO: 
