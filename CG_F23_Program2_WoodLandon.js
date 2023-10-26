@@ -69,8 +69,18 @@ var theta= [0, -60, 60, -60, 60, -60, 60, -60, 60, 0, 0];
 var stack = [];
 var figure = [];
 
+// Vertex and color buffers
+var vBuffer;
+var cBuffer;
 
-var vBuffer, cBuffer;
+// Camera variables
+var radius = 1.0;
+var theta_cam = 0.0;
+var phi = 0.0;
+var dr = 5.0 * Math.PI/180.0;
+
+const at = vec3(0.0, 0.0, 0.0);
+const up = vec3(0.0, 1.0, 0.0)
 
 // Function to create a node representing a segment
 function createNode(transform, render, sibling, child){
@@ -358,6 +368,10 @@ function init() {
         initialize_nodes(tentacle_1_lower_ID);
         console.log(theta)
     };
+    document.getElementById("Button1").onclick = function(){theta_cam += dr;};
+    document.getElementById("Button2").onclick = function(){theta_cam -= dr;};
+    document.getElementById("Button3").onclick = function(){phi += dr;};
+    document.getElementById("Button4").onclick = function(){phi -= dr;};
 
 
     // Initialize matrices and bind uniforms
@@ -385,10 +399,18 @@ init();
 
 function render() {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+
+    var eye = vec3(radius*Math.sin(theta_cam)*Math.cos(phi),
+                    radius*Math.sin(theta_cam)*Math.sin(phi),
+                    radius*Math.cos(theta_cam));
+
+    modelViewMatrix = lookAt(eye, at, up);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
+
     traverse(baseID);
     requestAnimationFrame(render);
 }
 
 
 // TODO: Add octopus eyes; maybe as two additional cubes rendered to clip slightly outside the side of the base. Colored black?
-// TODO: 
+// TODO: Add mesh
