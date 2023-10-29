@@ -43,6 +43,12 @@ var tentacle_7_ID = 7;
 var tentacle_8_ID = 8;
 var tentacle_1_lower_ID = 9;
 var tentacle_2_lower_ID = 10;
+var tentacle_3_lower_ID = 11;
+var tentacle_4_lower_ID = 12;
+var tentacle_5_lower_ID = 13;
+var tentacle_6_lower_ID = 14;
+var tentacle_7_lower_ID = 15;
+var tentacle_8_lower_ID = 16;
 
 // Parameters controlling the size of the Robot's arm
 var BASE_HEIGHT      = 2.0;
@@ -60,14 +66,19 @@ var instanceMatrix;
 var projectionMatrix;
 
 // Number of nodes in the tree (one node for each instance of unit cube to be rendered)
-var numNodes = 11;
+var numNodes = 17;
 
 // Array of rotation angles (in degrees) for each rotation axis
-var theta= [0, -60, 60, -60, 60, -60, 60, -60, 60, 0, 0];
+var theta = [0, -60, 60, -60, 60, -60, 60, -60, 60, 150, 210, 150, 210, 150, 210, 150, 210];
 
 // Stack array and figure array of nodes
 var stack = [];
 var figure = [];
+
+// Scale factor matrices for each type of segment
+var base_scale = scale(BASE_WIDTH, BASE_HEIGHT, BASE_WIDTH)
+var tentacle_scale = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH)
+var lower_tentacle_scale = scale(LOWER_TENTACLE_WIDTH, LOWER_TENTACLE_HEIGHT, LOWER_TENTACLE_WIDTH)
 
 // Vertex and color buffers
 var vBuffer;
@@ -78,7 +89,6 @@ var radius = 1.0;
 var theta_cam = 0.0;
 var phi = 0.0;
 var dr = 5.0 * Math.PI/180.0;
-
 const at = vec3(0.0, 0.0, 0.0);
 const up = vec3(0.0, 1.0, 0.0)
 
@@ -145,144 +155,211 @@ function traverse(ID) {
 function initialize_nodes(ID) {
     var m = mat4();
 
-    // Axes of rotation set in these functions
     switch(ID) {
         case baseID:
             m = rotate(theta[baseID], vec3(0, 1, 0 ));
-            figure[baseID] = createNode(m, base, null, tentacle_1_ID)
+            figure[baseID] = createNode(m, base, null, tentacle_1_ID);
             break;
         case tentacle_1_ID:
-            m = mult(m, rotate(theta[tentacle_1_ID], vec3(0, 0, 1 ))); // z
-            figure[tentacle_1_ID] = createNode(m, tentacle_1, tentacle_2_ID, tentacle_1_lower_ID) // TODO: Each tentacle will have a "lower" child
+            m = mult(m, rotate(theta[tentacle_1_ID], vec3(0, 0, 1)));
+            figure[tentacle_1_ID] = createNode(m, tentacle_1, tentacle_2_ID, tentacle_1_lower_ID);
             break;
         case tentacle_2_ID:
             m = mult(m, rotate(theta[tentacle_2_ID], vec3(0, 0, 1)) ); 
-            figure[tentacle_2_ID] = createNode(m, tentacle_2, tentacle_3_ID, null)
+            figure[tentacle_2_ID] = createNode(m, tentacle_2, tentacle_3_ID, tentacle_2_lower_ID);
             break;
         case tentacle_3_ID:
             m = mult(m, rotate(theta[tentacle_3_ID], vec3(1, 0, 0)) ); // x
-            figure[tentacle_3_ID] = createNode(m, tentacle_3, tentacle_4_ID, null)
+            figure[tentacle_3_ID] = createNode(m, tentacle_3, tentacle_4_ID, tentacle_3_lower_ID);
             break;
         case tentacle_4_ID:
             m = mult(m, rotate(theta[tentacle_4_ID], vec3(1, 0, 0)) );
-            figure[tentacle_4_ID] = createNode(m, tentacle_4, tentacle_5_ID, null)
+            figure[tentacle_4_ID] = createNode(m, tentacle_4, tentacle_5_ID, tentacle_4_lower_ID);
             break;
         case tentacle_5_ID:
             m = mult(m, rotate(theta[tentacle_5_ID], vec3(1, 0, 1)) ); // xz
-            figure[tentacle_5_ID] = createNode(m, tentacle_5, tentacle_6_ID, null)
+            figure[tentacle_5_ID] = createNode(m, tentacle_5, tentacle_6_ID, tentacle_5_lower_ID);
             break;
         case tentacle_6_ID:
             m = mult(m, rotate(theta[tentacle_6_ID], vec3(1, 0, 1)) );
-            figure[tentacle_6_ID] = createNode(m, tentacle_6, tentacle_7_ID, null)
+            figure[tentacle_6_ID] = createNode(m, tentacle_6, tentacle_7_ID, tentacle_6_lower_ID);
             break;
         case tentacle_7_ID:
             m = mult(m, rotate(theta[tentacle_7_ID], vec3(-1, 0, 1)) ); // -xz 
-            figure[tentacle_7_ID] = createNode(m, tentacle_7, tentacle_8_ID, null)
+            figure[tentacle_7_ID] = createNode(m, tentacle_7, tentacle_8_ID, tentacle_7_lower_ID);
             break;
         case tentacle_8_ID:
             m = mult(m, rotate(theta[tentacle_8_ID], vec3(-1, 0, 1)) ); 
-            figure[tentacle_8_ID] = createNode(m, tentacle_8, null, null)
+            figure[tentacle_8_ID] = createNode(m, tentacle_8, null, tentacle_8_lower_ID);
             break;
 
-        // Lower parts of tentacles 
+        // Lower sections of tentacles
         case tentacle_1_lower_ID:
-            m = mult(m, rotate(theta[tentacle_1_lower_ID], vec3(0, 0, 1)) ); 
-            console.log("tentacle 1 lower:")
-            console.log(m)
+            m = translate(0.0, -5, 0.0)
+            m = mult(m, rotate(theta[tentacle_1_lower_ID], vec3(0, 0, 1)))
             figure[tentacle_1_lower_ID] = createNode(m, tentacle_1_lower, null, null)
+            break;
+        case tentacle_2_lower_ID:
+            m = translate(0.0, -5, 0.0)
+            m = mult(m, rotate(theta[tentacle_2_lower_ID], vec3(0, 0, 1)))
+            figure[tentacle_2_lower_ID] = createNode(m, tentacle_2_lower, null, null)
+            break;
+        case tentacle_3_lower_ID:
+            m = translate(0.0, -5, 0.0)
+            m = mult(m, rotate(theta[tentacle_3_lower_ID], vec3(1, 0, 0)))
+            figure[tentacle_3_lower_ID] = createNode(m, tentacle_3_lower, null, null)
+            break;
+        case tentacle_4_lower_ID:
+            m = translate(0.0, -5, 0.0)
+            m = mult(m, rotate(theta[tentacle_4_lower_ID], vec3(1, 0, 0)))
+            figure[tentacle_4_lower_ID] = createNode(m, tentacle_4_lower, null, null)
+            break;
+        case tentacle_5_lower_ID:
+            m = translate(0.0, -5, 0.0)
+            m = mult(m, rotate(theta[tentacle_5_lower_ID], vec3(1, 0, 1)))
+            figure[tentacle_5_lower_ID] = createNode(m, tentacle_5_lower, null, null)
+            break;
+        case tentacle_6_lower_ID:
+            m = translate(0.0, -5, 0.0)
+            m = mult(m, rotate(theta[tentacle_6_lower_ID], vec3(1, 0, 1)))
+            figure[tentacle_6_lower_ID] = createNode(m, tentacle_6_lower, null, null)
+            break;
+        case tentacle_7_lower_ID:
+            m = translate(0.0, -5, 0.0)
+            m = mult(m, rotate(theta[tentacle_7_lower_ID], vec3(-1, 0, 1)))
+            figure[tentacle_7_lower_ID] = createNode(m, tentacle_7_lower, null, null)
+            break;
+        case tentacle_8_lower_ID:
+            m = translate(0.0, -5, 0.0)
+            m = mult(m, rotate(theta[tentacle_8_lower_ID], vec3(-1, 0, 1)))
+            figure[tentacle_8_lower_ID] = createNode(m, tentacle_8_lower, null, null)
             break;
     }
 
 }
-    
 
 
-
-
-// Scales and translations done in these functions
+// Drawing functions for base and upper tentacles
 function base() {
-    var s = scale(BASE_WIDTH, BASE_HEIGHT, BASE_WIDTH);
-    instanceMatrix = mult( translate( 0.0, 0.0, 0.0 ), s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, base_scale)
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
 }
 
 function tentacle_1() {
-    var s = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH);
-    instanceMatrix = mult( translate( 0.0, -3.0, 0.0 ), s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)   );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, -3.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, tentacle_scale)
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
 }
 
 function tentacle_2() {
-    var s = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH);
-    instanceMatrix = mult(translate( 0.0, -3.0, 0.0 ),s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, -3.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, tentacle_scale)
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
 }
 
 function tentacle_3() {
-    var s = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH);
-    instanceMatrix = mult(translate( 0.0, -3.0, 0.0 ),s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, -3.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, tentacle_scale)
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
 }
 
 function tentacle_4() {
-    var s = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH);
-    instanceMatrix = mult(translate( 0.0, -3.0, 0.0 ),s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, -3.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, tentacle_scale)
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
 }
 
 function tentacle_5() {
-    var s = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH);
-    instanceMatrix = mult(translate( 0.0, -3.0, 0.0 ),s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, -3.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, tentacle_scale)
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
 }
 
 function tentacle_6() {
-    var s = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH);
-    instanceMatrix = mult(translate( 0.0, -3.0, 0.0 ),s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, -3.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, tentacle_scale)
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
 }
 
 function tentacle_7() {
-    var s = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH);
-    instanceMatrix = mult(translate( 0.0, -3.0, 0.0 ),s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, -3.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, tentacle_scale)
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
 }
 
 function tentacle_8() {
-    var s = scale(TENTACLE_WIDTH, TENTACLE_HEIGHT, TENTACLE_WIDTH);
-    instanceMatrix = mult(translate( 0.0, -3.0, 0.0 ),s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
-}
-
-function tentacle_1_lower() {
-    //modelViewMatrix = figure[tentacle_1_ID].transform
-    var s = scale(LOWER_TENTACLE_WIDTH, LOWER_TENTACLE_HEIGHT, LOWER_TENTACLE_WIDTH);
-    instanceMatrix = mult(translate( 0.0, -5.5, 0.0 ),s);
-    var t = mult(modelViewMatrix, instanceMatrix);
-    gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t)  );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, -3.0, 0.0));
+    instanceMatrix = mult(instanceMatrix, tentacle_scale)
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
 }
 
 
+// Drawing functions for lower tentacles
+function tentacle_1_lower() {   
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * LOWER_TENTACLE_HEIGHT, 0.0));
+    instanceMatrix = mult(instanceMatrix, lower_tentacle_scale);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
+}
 
+function tentacle_2_lower() {
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * LOWER_TENTACLE_HEIGHT, 0.0));
+    instanceMatrix = mult(instanceMatrix, lower_tentacle_scale);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
+}
+
+function tentacle_3_lower() {
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * LOWER_TENTACLE_HEIGHT, 0.0));
+    instanceMatrix = mult(instanceMatrix, lower_tentacle_scale);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
+}
+
+function tentacle_4_lower() {
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * LOWER_TENTACLE_HEIGHT, 0.0));
+    instanceMatrix = mult(instanceMatrix, lower_tentacle_scale);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
+}
+
+function tentacle_5_lower() {
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * LOWER_TENTACLE_HEIGHT, 0.0));
+    instanceMatrix = mult(instanceMatrix, lower_tentacle_scale);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
+}
+
+function tentacle_6_lower() {
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * LOWER_TENTACLE_HEIGHT, 0.0));
+    instanceMatrix = mult(instanceMatrix, lower_tentacle_scale);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
+}
+
+function tentacle_7_lower() {
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * LOWER_TENTACLE_HEIGHT, 0.0));
+    instanceMatrix = mult(instanceMatrix, lower_tentacle_scale);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
+}
+
+function tentacle_8_lower() {
+    instanceMatrix = mult(modelViewMatrix, translate(0.0, 0.5 * LOWER_TENTACLE_HEIGHT, 0.0));
+    instanceMatrix = mult(instanceMatrix, lower_tentacle_scale);
+    gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(instanceMatrix));
+    gl.drawArrays(gl.TRIANGLES, 0, NumVertices);
+}
 
 function init() {
 
@@ -326,6 +403,7 @@ function init() {
     document.getElementById("slider1").onchange = function(event) {
          theta[1] = event.target.value;
          initialize_nodes(tentacle_1_ID);
+        //  tentacle_1();
          console.log(theta)
     };
     document.getElementById("slider2").onchange = function(event) {
@@ -366,6 +444,41 @@ function init() {
     document.getElementById("slider9").onchange = function(event) {
         theta[9] = event.target.value;
         initialize_nodes(tentacle_1_lower_ID);
+        console.log(theta)
+    };
+    document.getElementById("slider10").onchange = function(event) {
+        theta[10] = event.target.value;
+        initialize_nodes(tentacle_2_lower_ID);
+        console.log(theta)
+    };
+    document.getElementById("slider11").onchange = function(event) {
+        theta[11] = event.target.value;
+        initialize_nodes(tentacle_3_lower_ID);
+        console.log(theta)
+    };
+    document.getElementById("slider12").onchange = function(event) {
+        theta[12] = event.target.value;
+        initialize_nodes(tentacle_4_lower_ID);
+        console.log(theta)
+    };
+    document.getElementById("slider13").onchange = function(event) {
+        theta[13] = event.target.value;
+        initialize_nodes(tentacle_5_lower_ID);
+        console.log(theta)
+    };
+    document.getElementById("slider14").onchange = function(event) {
+        theta[14] = event.target.value;
+        initialize_nodes(tentacle_6_lower_ID);
+        console.log(theta)
+    };
+    document.getElementById("slider15").onchange = function(event) {
+        theta[15] = event.target.value;
+        initialize_nodes(tentacle_7_lower_ID);
+        console.log(theta)
+    };
+    document.getElementById("slider16").onchange = function(event) {
+        theta[16] = event.target.value;
+        initialize_nodes(tentacle_8_lower_ID);
         console.log(theta)
     };
     document.getElementById("Button1").onclick = function(){theta_cam += dr;};
@@ -412,5 +525,10 @@ function render() {
 }
 
 
-// TODO: Add octopus eyes; maybe as two additional cubes rendered to clip slightly outside the side of the base. Colored black?
-// TODO: Add mesh
+// Priorities:
+// 2. Add lighting
+// 3. Add mesh
+// 4. Add button movement/animation instead of sliders
+// 5. Add eyes
+// 6. Refactor for clarity and to make it look less like sample code
+// 7. Add "head" to octopus
