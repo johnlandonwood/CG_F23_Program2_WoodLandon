@@ -2,7 +2,7 @@
 
 var canvas, gl, program;
 
-var NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
+var NumVertices = 36;
 
 var points = [];
 var colors = [];
@@ -30,7 +30,6 @@ var vertexColors = [
     vec4( 0.0, 1.0, 1.0, 1.0 )   // cyan
 ];
 
-
 // IDs for each segment
 var baseID = 0;
 var tentacle_1_ID = 1;
@@ -56,7 +55,7 @@ var BASE_WIDTH       = 2.0;
 var TENTACLE_HEIGHT = 4.0;
 var TENTACLE_WIDTH = 0.5;
 
-var LOWER_TENTACLE_HEIGHT = 1.5;
+var LOWER_TENTACLE_HEIGHT = 2.0;
 var LOWER_TENTACLE_WIDTH = 0.5;
 
 // Shader transformation matrices
@@ -83,6 +82,7 @@ var lower_tentacle_scale = scale(LOWER_TENTACLE_WIDTH, LOWER_TENTACLE_HEIGHT, LO
 // Vertex and color buffers
 var vBuffer;
 var cBuffer;
+var nBuffer;
 
 // Camera variables
 var radius = 1.0;
@@ -91,6 +91,21 @@ var phi = 0.0;
 var dr = 5.0 * Math.PI/180.0;
 const at = vec3(0.0, 0.0, 0.0);
 const up = vec3(0.0, 1.0, 0.0)
+
+// Lighting variables
+var nMatrix;
+var nMatrixLoc;
+var normalsArray = [];
+var lightAmbient = vec4(0.2, 0.2, 0.2, 1.0);
+var lightDiffuse = vec4(1.0, 1.0, 1.0, 1.0);
+var lightSpecular = vec4(1.0, 1.0, 1.0, 1.0);
+var lightPosition = vec4(1.0, 1.0, 1.0, 0.0);
+var materialAmbient = vec4(1.0, 0.0, 1.0, 1.0);
+var materialDiffuse = vec4(1.0, 0.8, 0.0, 1.0);
+var materialSpecular = vec4(1.0, 1.0, 1.0, 1.0);
+var materialShininess = 10.0;
+
+
 
 // Function to create a node representing a segment
 function createNode(transform, render, sibling, child){
@@ -104,18 +119,39 @@ function createNode(transform, render, sibling, child){
 }
 
 // Function to render and color a quad
+// Also adds normals for each triangle
 function quad(a,  b,  c,  d) {
-    colors.push(vertexColors[a]);
+
+    var t1 = subtract(vertices[b], vertices[a]);
+    var t2 = subtract(vertices[c], vertices[b]);
+    var normal = normalize(cross(t1, t2));
+    normal = vec4(normal[0], normal[1], normal[2], 0.0);
+
+    normalsArray.push(normal);
+    normalsArray.push(normal);
+    normalsArray.push(normal);
+
+    colors.push(vertexColors[1]);
     points.push(vertices[a]);
-    colors.push(vertexColors[a]);
+    colors.push(vertexColors[1]);
     points.push(vertices[b]);
-    colors.push(vertexColors[a]);
+    colors.push(vertexColors[1]);
     points.push(vertices[c]);
-    colors.push(vertexColors[a]);
+
+    t1 = subtract(vertices[c], vertices[a]);
+    t2 = subtract(vertices[d], vertices[c]);
+    normal = normalize(cross(t1, t2));
+    normal = vec4(normal[0], normal[1], normal[2], 0.0);
+
+    normalsArray.push(normal);
+    normalsArray.push(normal);
+    normalsArray.push(normal);
+
+    colors.push(vertexColors[1]);
     points.push(vertices[a]);
-    colors.push(vertexColors[a]);
+    colors.push(vertexColors[1]);
     points.push(vertices[c]);
-    colors.push(vertexColors[a]);
+    colors.push(vertexColors[1]);
     points.push(vertices[d]);
 }
 
@@ -393,98 +429,25 @@ function init() {
     gl.vertexAttribPointer( colorLoc, 4, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( colorLoc );
 
+    var ambientProduct = mult(lightAmbient, materialAmbient);
+    var diffuseProduct = mult(lightDiffuse, materialDiffuse);
+    var specularProduct = mult(lightSpecular, materialSpecular);
+    
+    nBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, nBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(normalsArray), gl.STATIC_DRAW);
 
-    // Event listeners
-    document.getElementById("slider0").onchange = function(event) {
-        theta[0] = event.target.value;
-        initialize_nodes(baseID);
-        console.log(theta)
-    };
-    document.getElementById("slider1").onchange = function(event) {
-         theta[1] = event.target.value;
-         initialize_nodes(tentacle_1_ID);
-        //  tentacle_1();
-         console.log(theta)
-    };
-    document.getElementById("slider2").onchange = function(event) {
-         theta[2] =  event.target.value;
-         initialize_nodes(tentacle_2_ID);
-         console.log(theta)
-    };
-    document.getElementById("slider3").onchange = function(event) {
-        theta[3] = event.target.value;
-        initialize_nodes(tentacle_3_ID);
-        console.log(theta)
-   };
-   document.getElementById("slider4").onchange = function(event) {
-        theta[4] = event.target.value;
-        initialize_nodes(tentacle_4_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider5").onchange = function(event) {
-        theta[5] = event.target.value;
-        initialize_nodes(tentacle_5_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider6").onchange = function(event) {
-        theta[6] = event.target.value;
-        initialize_nodes(tentacle_6_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider7").onchange = function(event) {
-        theta[7] = event.target.value;
-        initialize_nodes(tentacle_7_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider8").onchange = function(event) {
-        theta[8] = event.target.value;
-        initialize_nodes(tentacle_8_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider9").onchange = function(event) {
-        theta[9] = event.target.value;
-        initialize_nodes(tentacle_1_lower_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider10").onchange = function(event) {
-        theta[10] = event.target.value;
-        initialize_nodes(tentacle_2_lower_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider11").onchange = function(event) {
-        theta[11] = event.target.value;
-        initialize_nodes(tentacle_3_lower_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider12").onchange = function(event) {
-        theta[12] = event.target.value;
-        initialize_nodes(tentacle_4_lower_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider13").onchange = function(event) {
-        theta[13] = event.target.value;
-        initialize_nodes(tentacle_5_lower_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider14").onchange = function(event) {
-        theta[14] = event.target.value;
-        initialize_nodes(tentacle_6_lower_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider15").onchange = function(event) {
-        theta[15] = event.target.value;
-        initialize_nodes(tentacle_7_lower_ID);
-        console.log(theta)
-    };
-    document.getElementById("slider16").onchange = function(event) {
-        theta[16] = event.target.value;
-        initialize_nodes(tentacle_8_lower_ID);
-        console.log(theta)
-    };
-    document.getElementById("Button1").onclick = function(){theta_cam += dr;};
-    document.getElementById("Button2").onclick = function(){theta_cam -= dr;};
-    document.getElementById("Button3").onclick = function(){phi += dr;};
-    document.getElementById("Button4").onclick = function(){phi -= dr;};
+    var normalLoc = gl.getAttribLocation(program, "aNormal");
+    gl.vertexAttribPointer(normalLoc, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(normalLoc);
+
+    nMatrixLoc = gl.getUniformLocation(program, "uNormalMatrix");
+
+    gl.uniform4fv(gl.getUniformLocation(program, "uAmbientProduct"), flatten(ambientProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "uDiffuseProduct"), flatten(diffuseProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "uSpecularProduct"), flatten(specularProduct));
+    gl.uniform4fv(gl.getUniformLocation(program, "uLightPosition"), flatten(lightPosition));
+    gl.uniform1f(gl.getUniformLocation(program, "uShininess"), materialShininess);
 
 
     // Initialize matrices and bind uniforms
@@ -496,10 +459,83 @@ function init() {
     modelViewMatrixLoc = gl.getUniformLocation(program, "uModelViewMatrix")
     
 
+    // Event listeners
+    document.getElementById("slider0").onchange = function(event) {
+        theta[0] = event.target.value;
+        initialize_nodes(baseID);
+    };
+    document.getElementById("slider1").onchange = function(event) {
+        theta[1] = event.target.value;
+        initialize_nodes(tentacle_1_ID);
+    };
+    document.getElementById("slider2").onchange = function(event) {
+        theta[2] =  event.target.value;
+        initialize_nodes(tentacle_2_ID);
+    };
+    document.getElementById("slider3").onchange = function(event) {
+        theta[3] = event.target.value;
+        initialize_nodes(tentacle_3_ID);
+    };
+    document.getElementById("slider4").onchange = function(event) {
+        theta[4] = event.target.value;
+        initialize_nodes(tentacle_4_ID);
+    };
+    document.getElementById("slider5").onchange = function(event) {
+        theta[5] = event.target.value;
+        initialize_nodes(tentacle_5_ID);
+    };
+    document.getElementById("slider6").onchange = function(event) {
+        theta[6] = event.target.value;
+        initialize_nodes(tentacle_6_ID);
+    };
+    document.getElementById("slider7").onchange = function(event) {
+        theta[7] = event.target.value;
+        initialize_nodes(tentacle_7_ID);
+    };
+    document.getElementById("slider8").onchange = function(event) {
+        theta[8] = event.target.value;
+        initialize_nodes(tentacle_8_ID);
+    };
+    document.getElementById("slider9").onchange = function(event) {
+        theta[9] = event.target.value;
+        initialize_nodes(tentacle_1_lower_ID);
+    };
+    document.getElementById("slider10").onchange = function(event) {
+        theta[10] = event.target.value;
+        initialize_nodes(tentacle_2_lower_ID);
+    };
+    document.getElementById("slider11").onchange = function(event) {
+        theta[11] = event.target.value;
+        initialize_nodes(tentacle_3_lower_ID);
+    };
+    document.getElementById("slider12").onchange = function(event) {
+        theta[12] = event.target.value;
+        initialize_nodes(tentacle_4_lower_ID);
+    };
+    document.getElementById("slider13").onchange = function(event) {
+        theta[13] = event.target.value;
+        initialize_nodes(tentacle_5_lower_ID);
+    };
+    document.getElementById("slider14").onchange = function(event) {
+        theta[14] = event.target.value;
+        initialize_nodes(tentacle_6_lower_ID);
+    };
+    document.getElementById("slider15").onchange = function(event) {
+        theta[15] = event.target.value;
+        initialize_nodes(tentacle_7_lower_ID);
+    };
+    document.getElementById("slider16").onchange = function(event) {
+        theta[16] = event.target.value;
+        initialize_nodes(tentacle_8_lower_ID);
+    };
+    document.getElementById("Button1").onclick = function(){theta_cam += dr;};
+    document.getElementById("Button2").onclick = function(){theta_cam -= dr;};
+    document.getElementById("Button3").onclick = function(){phi += dr;};
+    document.getElementById("Button4").onclick = function(){phi -= dr;};
+
     for(i = 0; i < numNodes; i++) {
         initialize_nodes(i);
     } 
-
 
     render();
 }
@@ -520,13 +556,15 @@ function render() {
     modelViewMatrix = lookAt(eye, at, up);
     gl.uniformMatrix4fv(modelViewMatrixLoc, false, flatten(modelViewMatrix));
 
+    nMatrix = normalMatrix(modelViewMatrix, true);
+    gl.uniformMatrix3fv(nMatrixLoc, false, flatten(nMatrix));
+
     traverse(baseID);
     requestAnimationFrame(render);
 }
 
 
 // Priorities:
-// 2. Add lighting
 // 3. Add mesh
 // 4. Add button movement/animation instead of sliders
 // 5. Add eyes
