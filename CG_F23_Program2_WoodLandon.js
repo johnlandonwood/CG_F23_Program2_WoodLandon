@@ -105,7 +105,8 @@ var materialDiffuse = vec4(1.0, 0.8, 0.0, 1.0);
 var materialSpecular = vec4(1.0, 1.0, 1.0, 1.0);
 var materialShininess = 10.0;
 
-
+var animationFlag = false;
+var animation_reverse = false;
 
 // Function to create a node representing a segment
 function createNode(transform, render, sibling, child){
@@ -117,6 +118,24 @@ function createNode(transform, render, sibling, child){
     }
     return node;
 }
+
+// Mesh generation
+var nRows = 50;
+var nColumns = 50;
+var data = [];
+for (var i = 0; i < nRows; ++i) {
+    data.push([]);
+    for (var j = 0; j < nColumns; ++j) {
+        data[i][j] = 0;
+    }
+}
+var colorLoc;
+var meshBuffer;
+var positionsArray = [];
+const black = vec4(0.0, 0.0, 0.0, 1.0);
+const red = vec4(1.0, 0.0, 0.0, 1.0);
+
+
 
 // Function to render and color a quad
 // Also adds normals for each triangle
@@ -406,8 +425,26 @@ function init() {
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 0.9, 0.9, 0.9, 1.0 );
     gl.enable( gl.DEPTH_TEST );
+    gl.depthFunc(gl.LEQUAL);
+    gl.enable(gl.POLYGON_OFFSET_FILL);
+    gl.polygonOffset(1.0, 2.0);
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
+
+    for(var i=0; i<nRows-1; i++) {
+        for(var j=0; j<nColumns-1;j++) {
+            positionsArray.push( vec4(2*i/nRows-1, data[i][j], 2*j/nColumns-1, 1.0));
+            positionsArray.push( vec4(2*(i+1)/nRows-1, data[i+1][j], 2*j/nColumns-1, 1.0));
+            positionsArray.push( vec4(2*(i+1)/nRows-1, data[i+1][j+1], 2*(j+1)/nColumns-1, 1.0));
+            positionsArray.push( vec4(2*i/nRows-1, data[i][j+1], 2*(j+1)/nColumns-1, 1.0) );
+        }
+    }
+
+    meshBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, meshBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(positionsArray), gl.STATIC_DRAW);
+    colorLoc = gl.getUniformLocation(program, "uColor");
+
 
     // Initializes points and colors
     colorCube();
@@ -532,10 +569,19 @@ function init() {
     document.getElementById("Button2").onclick = function(){theta_cam -= dr;};
     document.getElementById("Button3").onclick = function(){phi += dr;};
     document.getElementById("Button4").onclick = function(){phi -= dr;};
+    document.getElementById("Button5").onclick = function(){
+        animationFlag = !animationFlag;
+    };
+    document.getElementById("Button6").onclick = function(){
+        lower_animation_flag = !lower_animation_flag;
+    };
+
 
     for(i = 0; i < numNodes; i++) {
         initialize_nodes(i);
     } 
+
+  
 
     render();
 }
@@ -546,8 +592,28 @@ for(var i = 0; i < numNodes; i++)  {
 
 init();
 
+
+// var t = -60.0;
+// var lower_t = 150;
+// var lower_animation_flag = false;
+// var lower_animation_reverse = false;
+
+// var t_arr = theta;
+
+// var overall_animation_flag = false;
+// var tentacle_animation_flags = [] // Dummy 0 for base 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+// var upper_tentacle_t = []
+
+
+
+// var upper_tentacle_animation_flag = [false, false, false, false, false, false, false, false]
+// var lower_tentacle_animation_flag = [false, false, false, false, false, false, false, false]
+// var upper_t = [-60, 60, -60, 60, -60, 60, -60, 60];
+// var lower_t = [150, 210, 150, 210, 150, 210, 150, 210];
+
 function render() {
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+    
 
     var eye = vec3(radius*Math.sin(theta_cam)*Math.cos(phi),
                     radius*Math.sin(theta_cam)*Math.sin(phi),
@@ -559,7 +625,80 @@ function render() {
     nMatrix = normalMatrix(modelViewMatrix, true);
     gl.uniformMatrix3fv(nMatrixLoc, false, flatten(nMatrix));
 
+
+    for(var i=0; i<positionsArray.length; i+=4) {
+        gl.uniform4fv(colorLoc, red);
+        gl.drawArrays( gl.TRIANGLE_FAN, i, 4 );
+        gl.uniform4fv(colorLoc, black);
+        gl.drawArrays( gl.LINE_LOOP, i, 4 );
+    }
+
+    // overall animation flag to control all movement
+    // array of animation flags for each tentacle; 1 = forward, 0 = reverse
+    // can have arrays of t's as well
+
+
+    // if (overall_animation_flag) {
+    //     for (var i = 0; i < numNodes; i++) {
+    //         if (tentacle_animation_flags[i]) {
+    //             tentacle_t[i] = tentacle_t[i] +0.25;
+    //             theta[i] = tentacle_t[i]
+    //             initialize_nodes(i);
+    //             if (tentacle_t[i] > 0) {
+    //                 tentacle_animation_flag
+    //             }
+    //         }
+    //     }
+    // }
+
+
+
+    // if (animationFlag) {        
+    //     t = t + 0.25;
+    //     theta[1] = t;
+    //     initialize_nodes(tentacle_1_ID);
+    //     if (t > 0) {
+    //         animationFlag = false;
+    //         animation_reverse = true;
+    //     }
+    // }
+    // if (animation_reverse) {
+    //     t = t - 0.25;
+    //     theta[1] = t;
+    //     initialize_nodes(tentacle_1_ID)
+    //     if (t < -60) {
+    //         animation_reverse = false;
+    //         animationFlag = true;
+    //     }
+    // }
+
+    // if (lower_animation_flag) {
+    //     lower_t[0] = lower_t[0] - 0.5;
+    //     theta[9] = lower_t[0];
+    //     initialize_nodes(tentacle_1_lower_ID)
+    //     if (lower_t[0] < 90) {
+    //         lower_animation_flag = false;
+    //         lower_animation_reverse = true;
+    //     }
+
+    // }
+    // if (lower_animation_reverse) {
+    //     lower_t[0] = lower_t[0] + 0.5;
+    //     theta[9] = lower_t[0];
+    //     initialize_nodes(tentacle_1_lower_ID)
+    //     if (lower_t[0] > 270) {
+    //         lower_animation_reverse = false;
+    //         lower_animation_flag = true;
+    //     }
+    // }
+
+
+
     traverse(baseID);
+
+
+
+
     requestAnimationFrame(render);
 }
 
@@ -567,6 +706,7 @@ function render() {
 // Priorities:
 // 3. Add mesh
 // 4. Add button movement/animation instead of sliders
-// 5. Add eyes
-// 6. Refactor for clarity and to make it look less like sample code
-// 7. Add "head" to octopus
+// 5. Fix color issues that came when adding lighting - how to avoid just brown/yellow
+// 6. Add eyes
+// 7. Refactor for clarity and to make it look less like sample code
+// 8. Add "head" to octopus
