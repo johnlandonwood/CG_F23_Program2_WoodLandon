@@ -10,6 +10,9 @@
     <button id = "Button3">Increase phi</button>
     <button id = "Button4">Decrease phi</button>
 </div>
+<div>
+    <button id="Button5">Swim</button>
+</div>
 
 
 <div>
@@ -93,6 +96,7 @@ precision mediump float;
 
 in vec4 vColor;
 out vec4 fColor;
+uniform vec4 uColor;
 
 uniform vec4 uAmbientProduct;
 uniform vec4 uDiffuseProduct;
@@ -115,9 +119,8 @@ void main() {
         specular = vec4(0.0, 0.0, 0.0, 1.0);
     } 
     
-    // How to add vColor in here? The lighting otherwise is always the weird brown/yellow from shadedSphere4
     fColor = (ambient + diffuse + specular);
-    //fColor.a = 1.0;
+    fColor.a = 1.0;
 }
 </script>
 
