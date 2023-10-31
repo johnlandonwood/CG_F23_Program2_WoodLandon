@@ -128,23 +128,6 @@ function createNode(transform, render, sibling, child){
     return node;
 }
 
-// Mesh generation
-// var nRows = 50;
-// var nColumns = 50;
-// var data = [];
-// for (var i = 0; i < nRows; ++i) {
-//     data.push([]);
-//     for (var j = 0; j < nColumns; ++j) {
-//         data[i][j] = 0;
-//     }
-// }
-// var colorLoc;
-// var meshBuffer;
-// var positionsArray = [];
-// const black = vec4(0.0, 0.0, 0.0, 1.0);
-// const red = vec4(1.0, 0.0, 0.0, 1.0);
-
-
 
 // Function to render and color a quad
 // Also adds normals for each triangle
@@ -433,26 +416,9 @@ function init() {
     gl.viewport( 0, 0, canvas.width, canvas.height );
     gl.clearColor( 0.9, 0.9, 0.9, 1.0 );
     gl.enable( gl.DEPTH_TEST );
-    // gl.depthFunc(gl.LEQUAL);
-    // gl.enable(gl.POLYGON_OFFSET_FILL);
-    // gl.polygonOffset(1.0, 2.0);
+
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
-
-    // for(var i=0; i<nRows-1; i++) {
-    //     for(var j=0; j<nColumns-1;j++) {
-    //         positionsArray.push( vec4(2*i/nRows-1, data[i][j], 2*j/nColumns-1, 1.0));
-    //         positionsArray.push( vec4(2*(i+1)/nRows-1, data[i+1][j], 2*j/nColumns-1, 1.0));
-    //         positionsArray.push( vec4(2*(i+1)/nRows-1, data[i+1][j+1], 2*(j+1)/nColumns-1, 1.0));
-    //         positionsArray.push( vec4(2*i/nRows-1, data[i][j+1], 2*(j+1)/nColumns-1, 1.0) );
-    //     }
-    // }
-
-    // meshBuffer = gl.createBuffer();
-    // gl.bindBuffer(gl.ARRAY_BUFFER, meshBuffer);
-    // gl.bufferData(gl.ARRAY_BUFFER, flatten(positionsArray), gl.STATIC_DRAW);
-    // colorLoc = gl.getUniformLocation(program, "uColor");
-
 
     // Initializes points and colors
     colorCube();
@@ -614,13 +580,6 @@ function render() {
 
     nMatrix = normalMatrix(modelViewMatrix, true);
     gl.uniformMatrix3fv(nMatrixLoc, false, flatten(nMatrix));
-
-    // for(var i=0; i<positionsArray.length; i+=4) {
-    //     gl.uniform4fv(colorLoc, red);
-    //     gl.drawArrays( gl.TRIANGLE_FAN, i, 4 );
-    //     gl.uniform4fv(colorLoc, black);
-    //     gl.drawArrays( gl.LINE_LOOP, i, 4 );
-    // }
 
 
     // If animation flag is true, then move all tentacles, upper and lower, back and forth
@@ -932,21 +891,9 @@ function render() {
 
     }
 
-
-
-    
-
-
-
-
     traverse(baseID);
     requestAnimationFrame(render);
 }
 
 
-// Priorities:
-// 3. Add mesh
-// 5. Fix color issues that came when adding lighting - how to avoid just brown/yellow
-// 6. Add eyes
-// 7. Refactor for clarity and to make it look less like sample code
-// 8. Add "head" to octopus
+
